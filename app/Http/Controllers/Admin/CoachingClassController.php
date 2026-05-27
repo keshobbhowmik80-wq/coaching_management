@@ -27,6 +27,13 @@ class CoachingClassController extends Controller
         return Inertia::render('Admin/Classes/Create');
     }
 
+    public function edit(CoachingClass $class): Response
+    {
+        return Inertia::render('Admin/Classes/Edit', [
+            'coachingClass' => $class,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         CoachingClass::create($request->validate([
@@ -46,7 +53,7 @@ class CoachingClassController extends Controller
             'description' => ['nullable', 'string'],
         ]));
 
-        return back()->with('success', 'Class updated.');
+        return redirect()->route('admin.classes.index')->with('success', 'Class updated.');
     }
 
     public function destroy(CoachingClass $class): RedirectResponse

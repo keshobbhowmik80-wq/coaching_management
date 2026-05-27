@@ -43,15 +43,22 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function (): void {
         Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
         Route::get('/students/create', [AdminStudentController::class, 'create'])->name('admin.students.create');
+        Route::get('students/{student}/edit', [AdminStudentController::class, 'edit'])->name('students.edit');
         Route::resource('students', AdminStudentController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        //teachers
+        Route::get('teachers/create', [AdminTeacherController::class, 'create'])->name('teachers.create');
+        Route::get('teachers/{teacher}/edit', [AdminTeacherController::class, 'edit'])->name('teachers.edit');
         Route::resource('teachers', AdminTeacherController::class)->only(['index', 'store', 'update', 'destroy']);
 
         //coaching class
         Route::get('classes/create', [CoachingClassController::class, 'create'])->name('classes.create');
+        Route::get('classes/{class}/edit', [CoachingClassController::class, 'edit'])->name('classes.edit');
         Route::resource('classes', CoachingClassController::class)->parameters(['classes' => 'class'])->only(['index', 'store', 'update', 'destroy']);
 
         //section
         Route::get('sections/create', [SectionController::class, 'create'])->name('sections.create');
+        Route::get('sections/{section}/edit', [SectionController::class, 'edit'])->name('sections.edit');
         Route::resource('sections', SectionController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('subjects', SubjectController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('exams', AdminExamController::class)->only(['index', 'store', 'update', 'destroy']);

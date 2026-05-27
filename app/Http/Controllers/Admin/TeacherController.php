@@ -25,6 +25,18 @@ class TeacherController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Teachers/Create');
+    }
+
+    public function edit(Teacher $teacher): Response
+    {
+        return Inertia::render('Admin/Teachers/Edit', [
+            'teacher' => $teacher->load('user'),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -80,7 +92,7 @@ class TeacherController extends Controller
             $teacher->update(collect($validated)->except(['name', 'email', 'password'])->all());
         });
 
-        return back()->with('success', 'Teacher updated.');
+        return redirect()->route('admin.teachers.index')->with('success', 'Teacher updated.');
     }
 
     public function destroy(Teacher $teacher): RedirectResponse

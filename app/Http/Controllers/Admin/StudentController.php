@@ -37,6 +37,15 @@ class StudentController extends Controller
         ]);
     }
 
+    public function edit(Student $student): Response
+    {
+        return Inertia::render('Admin/Students/Edit', [
+            'student' => $student->load('user'),
+            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
+            'sections' => Section::orderBy('name')->get(['id', 'class_id', 'name']),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -98,7 +107,7 @@ class StudentController extends Controller
             $student->update(collect($validated)->except(['name', 'email', 'password'])->all());
         });
 
-        return back()->with('success', 'Student updated.');
+        return redirect()->route('admin.students.index')->with('success', 'Student updated.');
     }
 
     public function destroy(Student $student): RedirectResponse

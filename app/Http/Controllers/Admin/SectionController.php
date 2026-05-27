@@ -31,6 +31,14 @@ class SectionController extends Controller
         ]);
     }
 
+    public function edit(Section $section): Response
+    {
+        return Inertia::render('Admin/Sections/Edit', [
+            'section' => $section,
+            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Section::create($request->validate([
@@ -50,7 +58,7 @@ class SectionController extends Controller
             'capacity' => ['nullable', 'string', 'max:50'],
         ]));
 
-        return back()->with('success', 'Section updated.');
+        return redirect()->route('admin.sections.index')->with('success', 'Section updated.');
     }
 
     public function destroy(Section $section): RedirectResponse

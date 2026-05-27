@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import ManagementList from '@/components/ManagementList.vue';
 defineProps<{ students: any }>();
 const columns = [
@@ -10,5 +10,19 @@ const columns = [
     { key: 'section.name', label: 'Section' },
     { key: 'guardian_phone', label: 'Guardian Phone' },
 ];
+
+const deleteForm = useForm({});
+
+function handleDelete(id: number) {
+    if (confirm('Are you sure you want to delete this student?')) {
+        deleteForm.delete(`/admin/students/${id}`);
+    }
+}
 </script>
-<template><Head title="Students" /><ManagementList title="Students" description="Manage student accounts and academic placement." :items="students" :columns="columns" /></template>
+<template>
+
+    <Head title="Students" />
+    <ManagementList title="Students" description="Manage student accounts and academic placement." :items="students"
+        :columns="columns" :actions="['edit', 'delete']" edit-route="/admin/students/:id/edit"
+        delete-route="/admin/students/:id" @delete="handleDelete" />
+</template>
