@@ -29,6 +29,14 @@ class StudentController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Students/Create', [
+            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
+            'sections' => Section::with('coachingClass:id,name')->orderBy('name')->get(['id', 'class_id', 'name']),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([

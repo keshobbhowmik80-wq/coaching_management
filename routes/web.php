@@ -42,9 +42,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function (): void {
         Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
+        Route::get('/students/create', [AdminStudentController::class, 'create'])->name('admin.students.create');
         Route::resource('students', AdminStudentController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('teachers', AdminTeacherController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        //coaching class
+        Route::get('classes/create', [CoachingClassController::class, 'create'])->name('classes.create');
         Route::resource('classes', CoachingClassController::class)->parameters(['classes' => 'class'])->only(['index', 'store', 'update', 'destroy']);
+
+        //section
+        Route::get('sections/create', [SectionController::class, 'create'])->name('sections.create');
         Route::resource('sections', SectionController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('subjects', SubjectController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('exams', AdminExamController::class)->only(['index', 'store', 'update', 'destroy']);
@@ -78,4 +85,4 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     });
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

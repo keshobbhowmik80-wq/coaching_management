@@ -22,6 +22,11 @@ class CoachingClassController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Classes/Create');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         CoachingClass::create($request->validate([

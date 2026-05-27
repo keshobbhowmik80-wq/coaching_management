@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { ChevronDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-vue-next';
+import * as LucideIcons from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 
 type NavItem = {
     title: string;
     href: string;
+    icon?: string;
 };
 
 type NavGroup = {
@@ -38,6 +40,11 @@ const currentUrl = computed(() => page.url.split('?')[0]);
 
 function isActive(href: string): boolean {
     return currentUrl.value === href || currentUrl.value.startsWith(`${href}/`);
+}
+function resolveIcon(iconName: string){
+    const icon = (LucideIcons as Record<string, any>)[iconName];
+
+    return icon || null;
 }
 
 function toggleGroup(title: string): void {
@@ -94,8 +101,11 @@ function toggleGroup(title: string): void {
                             :title="sidebarCollapsed ? item.title : undefined"
                             @click="sidebarOpen = false"
                         >
-                            <span v-if="sidebarCollapsed" class="mx-auto">{{ item.title.charAt(0) }}</span>
-                            <span v-else>{{ item.title }}</span>
+                        <component v-if="item.icon"
+                        :is="resolveIcon(item.icon)"
+                        class="size-4 mr-2 shrink-0" />
+                            <!-- <span v-if="sidebarCollapsed" class="mx-auto">{{ item.title.charAt(0) }}</span> -->
+                            <span v-if="!sidebarCollapsed">{{ item.title }}</span>
                         </Link>
                     </div>
                 </div>

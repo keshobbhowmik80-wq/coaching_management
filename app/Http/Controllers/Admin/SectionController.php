@@ -24,6 +24,13 @@ class SectionController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Sections/Create', [
+            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Section::create($request->validate([
