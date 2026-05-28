@@ -24,6 +24,21 @@ class SubjectController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Subjects/Create', [
+            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function edit(Subject $subject): Response
+    {
+        return Inertia::render('Admin/Subjects/Edit', [
+            'subject' => $subject,
+            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Subject::create($request->validate([
@@ -47,7 +62,7 @@ class SubjectController extends Controller
             'pass_marks' => ['required', 'integer', 'min:0', 'lte:full_marks'],
         ]));
 
-        return back()->with('success', 'Subject updated.');
+        return redirect()->route('admin.subjects.index')->with('success', 'Subject updated.');
     }
 
     public function destroy(Subject $subject): RedirectResponse

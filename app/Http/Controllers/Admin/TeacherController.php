@@ -16,25 +16,34 @@ use Inertia\Response;
 
 class TeacherController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $teachers = Teacher::with('user')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('user', fn($u) => $u->where('name', 'like', "%{$search}%"))
+                        ->orWhere('employee_id', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         return Inertia::render('Admin/Teachers', [
-            'teachers' => InertiaPagination::format(
-                Teacher::with('user')->latest()->paginate(10)->withQueryString()
-            ),
+            'teachers' => InertiaPagination::format($teachers),
+            'filters' => (object) $request->only(['search']),
+            'allTeachers' => Teacher::with('user')
+                ->select('teachers.id', 'employee_id', 'users.name')
+                ->join('users', 'users.id', '=', 'teachers.user_id')
+                ->orderBy('employee_id')
+                ->get(),
         ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('Admin/Teachers/Create');
-    }
-
-    public function edit(Teacher $teacher): Response
-    {
-        return Inertia::render('Admin/Teachers/Edit', [
-            'teacher' => $teacher->load('user'),
-        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -64,6 +73,13 @@ class TeacherController extends Controller
         return back()->with('success', 'Teacher created.');
     }
 
+    public function edit(Teacher $teacher): Response
+    {
+        return Inertia::render('Admin/Teachers/Edit', [
+            'teacher' => $teacher->load('user'),
+        ]);
+    }
+
     public function update(Request $request, Teacher $teacher): RedirectResponse
     {
         $validated = $request->validate([
@@ -84,7 +100,7 @@ class TeacherController extends Controller
                 'role' => 'teacher',
             ];
 
-            if (! empty($validated['password'])) {
+            if (!empty($validated['password'])) {
                 $userData['password'] = Hash::make($validated['password']);
             }
 

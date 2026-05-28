@@ -24,6 +24,21 @@ class ExamController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Exams/Create', [
+            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function edit(Exam $exam): Response
+    {
+        return Inertia::render('Admin/Exams/Edit', [
+            'exam' => $exam,
+            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Exam::create($this->validated($request));
@@ -35,7 +50,7 @@ class ExamController extends Controller
     {
         $exam->update($this->validated($request));
 
-        return back()->with('success', 'Exam updated.');
+        return redirect()->route('admin.exams.index')->with('success', 'Exam updated.');
     }
 
     public function destroy(Exam $exam): RedirectResponse

@@ -18,29 +18,38 @@ use Inertia\Response;
 
 class StudentController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $students = Student::with(['user', 'coachingClass', 'section'])
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('user', fn($u) => $u->where('name', 'like', "%{$search}%"))
+                        ->orWhere('admission_no', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->filled('class_id'), fn($q) => $q->where('class_id', $request->class_id))
+            ->when($request->filled('section_id'), fn($q) => $q->where('section_id', $request->section_id))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         return Inertia::render('Admin/Students', [
-            'students' => InertiaPagination::format(
-                Student::with(['user', 'coachingClass', 'section'])->latest()->paginate(10)->withQueryString()
-            ),
+            'students' => InertiaPagination::format($students),
             'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
-            'sections' => Section::with('coachingClass:id,name')->orderBy('name')->get(['id', 'class_id', 'name']),
+            'sections' => Section::orderBy('name')->get(['id', 'class_id', 'name']),
+            'filters' => (object) $request->only(['search', 'class_id', 'section_id']),
+            'allStudents' => Student::with('user')
+                ->select('students.id', 'admission_no', 'users.name')
+                ->join('users', 'users.id', '=', 'students.user_id')
+                ->orderBy('admission_no')
+                ->get(),
         ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('Admin/Students/Create', [
-            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
-            'sections' => Section::with('coachingClass:id,name')->orderBy('name')->get(['id', 'class_id', 'name']),
-        ]);
-    }
-
-    public function edit(Student $student): Response
-    {
-        return Inertia::render('Admin/Students/Edit', [
-            'student' => $student->load('user'),
             'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
             'sections' => Section::orderBy('name')->get(['id', 'class_id', 'name']),
         ]);
@@ -76,6 +85,15 @@ class StudentController extends Controller
         return back()->with('success', 'Student created.');
     }
 
+    public function edit(Student $student): Response
+    {
+        return Inertia::render('Admin/Students/Edit', [
+            'student' => $student->load('user'),
+            'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
+            'sections' => Section::orderBy('name')->get(['id', 'class_id', 'name']),
+        ]);
+    }
+
     public function update(Request $request, Student $student): RedirectResponse
     {
         $validated = $request->validate([
@@ -99,7 +117,7 @@ class StudentController extends Controller
                 'role' => 'student',
             ];
 
-            if (! empty($validated['password'])) {
+            if (!empty($validated['password'])) {
                 $userData['password'] = Hash::make($validated['password']);
             }
 

@@ -60,7 +60,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('sections/create', [SectionController::class, 'create'])->name('sections.create');
         Route::get('sections/{section}/edit', [SectionController::class, 'edit'])->name('sections.edit');
         Route::resource('sections', SectionController::class)->only(['index', 'store', 'update', 'destroy']);
+        //subject
+        Route::get('subjects/create', [SubjectController::class, 'create'])->name('subjects.create');
+        Route::get('subjects/{subject}/edit', [SubjectController::class, 'edit'])->name('subjects.edit');
         Route::resource('subjects', SubjectController::class)->only(['index', 'store', 'update', 'destroy']);
+        //exam
+        Route::get('exams/create', [AdminExamController::class, 'create'])->name('exams.create');
+        Route::get('exams/{exam}/edit', [AdminExamController::class, 'edit'])->name('exams.edit');
         Route::resource('exams', AdminExamController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('marks', AdminMarkController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('payments', AdminPaymentController::class)->only(['index', 'store', 'update', 'destroy']);

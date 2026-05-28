@@ -20,3 +20,4 @@ class Subject extends Model
         return $this->hasMany(Mark::class);
     }
 }
+
