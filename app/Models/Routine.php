@@ -4,19 +4,27 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Routine extends Model
 {
     protected $fillable = [
+        'name',
         'class_id',
         'section_id',
-        'subject_id',
-        'teacher_id',
-        'day_of_week',
-        'starts_at',
-        'ends_at',
-        'room',
+        'type',
+        'exam_id',
+        'starts_on',
+        'ends_on',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'starts_on' => 'date',
+            'ends_on' => 'date',
+        ];
+    }
 
     public function coachingClass(): BelongsTo
     {
@@ -28,13 +36,13 @@ class Routine extends Model
         return $this->belongsTo(Section::class);
     }
 
-    public function subject(): BelongsTo
+    public function exam(): BelongsTo
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsTo(Exam::class);
     }
 
-    public function teacher(): BelongsTo
+    public function slots(): HasMany
     {
-        return $this->belongsTo(Teacher::class);
+        return $this->hasMany(RoutineSlot::class)->orderBy('day_of_week')->orderBy('starts_at');
     }
 }

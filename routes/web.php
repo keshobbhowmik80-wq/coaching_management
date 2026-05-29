@@ -72,6 +72,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::resource('payments', AdminPaymentController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('expenses', ExpenseController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('notices', AdminNoticeController::class)->only(['index', 'store', 'update', 'destroy']);
+        //routines
+        Route::get('routines/create', [AdminRoutineController::class, 'create'])->name('routines.create');
+        Route::get('routines/{routine}', [AdminRoutineController::class, 'show'])->name('routines.show');
+        Route::get('routines/{routine}/edit', [AdminRoutineController::class, 'edit'])->name('routines.edit');
         Route::resource('routines', AdminRoutineController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('students/{student}/exams/{exam}/marksheet', ReportCardController::class)->name('students.marksheet');
     });

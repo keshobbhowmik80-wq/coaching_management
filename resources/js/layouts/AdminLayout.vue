@@ -67,6 +67,7 @@ const groups = [
             { title: 'Add Exam', href: '/admin/exams/create', icon: 'Plus' },
             { title: 'Marks', href: '/admin/marks', icon: 'PenLine' },
             { title: 'Routines', href: '/admin/routines', icon: 'CalendarDays' },
+            { title: 'Add Routine', href: '/admin/routines/create', icon: 'Plus' },
         ],
     },
     {
