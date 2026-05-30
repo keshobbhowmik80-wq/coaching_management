@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CoachingClass;
 use App\Models\Exam;
+use App\Models\Mark;
 use App\Models\Routine;
 use App\Models\Section;
+use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Teacher;
 use App\Support\InertiaPagination;
@@ -66,6 +68,7 @@ class RoutineController extends Controller
             'ends_on' => ['nullable', 'date'],
             'slots' => ['required', 'array', 'min:1'],
             'slots.*.day_of_week' => ['required', 'string', 'max:20'],
+            'slots.*.date' => ['nullable', 'date'],
             'slots.*.subject_id' => ['nullable', 'exists:subjects,id'],
             'slots.*.teacher_id' => ['nullable', 'exists:teachers,id'],
             'slots.*.starts_at' => ['required', 'date_format:H:i'],
@@ -87,11 +90,44 @@ class RoutineController extends Controller
             foreach ($validated['slots'] as $slot) {
                 $routine->slots()->create($slot);
             }
+
+            // Auto-assign students for exam routines
+            if ($validated['type'] === 'exam') {
+                $studentIds = Student::where('class_id', $validated['class_id'])
+                    ->when($validated['section_id'], fn($q) => $q->where('section_id', $validated['section_id']))
+                    ->pluck('id');
+
+                $subjectIds = collect($validated['slots'])
+                    ->pluck('subject_id')
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                if ($studentIds->isNotEmpty() && $subjectIds->isNotEmpty()) {
+                    $marks = [];
+                    $now = now();
+
+                    foreach ($studentIds as $studentId) {
+                        foreach ($subjectIds as $subjectId) {
+                            $marks[] = [
+                                'exam_id' => $validated['exam_id'],
+                                'subject_id' => $subjectId,
+                                'student_id' => $studentId,
+                                'status' => 'present',
+                                'marks_obtained' => null,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
+                        }
+                    }
+
+                    Mark::insert($marks);
+                }
+            }
         });
 
-        return back()->with('success', 'Routine created.');
+        return back()->with('success', 'Routine created. Students auto-assigned to exam.');
     }
-
     public function edit(Routine $routine): Response
     {
         $routine->load(['coachingClass', 'section', 'exam', 'slots.subject', 'slots.teacher.user']);
@@ -137,10 +173,54 @@ class RoutineController extends Controller
                 'ends_on' => $validated['type'] === 'exam' ? $validated['ends_on'] : null,
             ]);
 
-            // Remove old slots and recreate
             $routine->slots()->delete();
             foreach ($validated['slots'] as $slot) {
                 $routine->slots()->create($slot);
+            }
+
+            // Auto-assign students for exam routines (only for new subjects)
+            if ($validated['type'] === 'exam') {
+                $studentIds = Student::where('class_id', $validated['class_id'])
+                    ->when($validated['section_id'], fn($q) => $q->where('section_id', $validated['section_id']))
+                    ->pluck('id');
+
+                $subjectIds = collect($validated['slots'])
+                    ->pluck('subject_id')
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                if ($studentIds->isNotEmpty() && $subjectIds->isNotEmpty()) {
+                    // Only insert for students not already assigned
+                    $existing = Mark::where('exam_id', $validated['exam_id'])
+                        ->select('student_id', 'subject_id')
+                        ->get()
+                        ->map(fn($m) => "{$m->student_id}-{$m->subject_id}")
+                        ->toArray();
+
+                    $marks = [];
+                    $now = now();
+
+                    foreach ($studentIds as $studentId) {
+                        foreach ($subjectIds as $subjectId) {
+                            if (!in_array("{$studentId}-{$subjectId}", $existing)) {
+                                $marks[] = [
+                                    'exam_id' => $validated['exam_id'],
+                                    'subject_id' => $subjectId,
+                                    'student_id' => $studentId,
+                                    'status' => 'present',
+                                    'marks_obtained' => null,
+                                    'created_at' => $now,
+                                    'updated_at' => $now,
+                                ];
+                            }
+                        }
+                    }
+
+                    if (!empty($marks)) {
+                        Mark::insert($marks);
+                    }
+                }
             }
         });
 

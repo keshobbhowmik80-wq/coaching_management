@@ -30,6 +30,65 @@ class MarkController extends Controller
         ]);
     }
 
+    public function entry(Request $request): Response
+    {
+        $examId = $request->input('exam_id');
+        $subjectId = $request->input('subject_id');
+
+        $exams = Exam::orderByDesc('id')->get(['id', 'name', 'class_id']);
+        $subjects = collect();
+        $students = collect();
+
+        if ($examId) {
+            $subjects = Subject::whereHas('marks', fn($q) => $q->where('exam_id', $examId))
+                ->get(['id', 'name', 'full_marks', 'pass_marks']);
+        }
+
+        if ($examId && $subjectId) {
+            $students = Mark::with('student.user')
+                ->where('exam_id', $examId)
+                ->where('subject_id', $subjectId)
+                ->where('status', 'present')
+                ->get()
+                ->map(fn($mark) => [
+                    'mark_id' => $mark->id,
+                    'student_id' => $mark->student_id,
+                    'name' => $mark->student->user->name,
+                    'admission_no' => $mark->student->admission_no,
+                    'marks_obtained' => $mark->marks_obtained,
+                    'status' => $mark->status,
+                ]);
+        }
+
+        return Inertia::render('Admin/Marks/Entry', [
+            'exams' => $exams,
+            'subjects' => $subjects,
+            'students' => $students,
+            'filters' => [
+                'exam_id' => $examId ? (int) $examId : null,
+                'subject_id' => $subjectId ? (int) $subjectId : null,
+            ],
+        ]);
+    }
+
+    public function bulkSave(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'exam_id' => ['required', 'exists:exams,id'],
+            'subject_id' => ['required', 'exists:subjects,id'],
+            'marks' => ['required', 'array'],
+            'marks.*.mark_id' => ['required', 'exists:marks,id'],
+            'marks.*.marks_obtained' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        foreach ($validated['marks'] as $entry) {
+            Mark::where('id', $entry['mark_id'])
+                ->update(['marks_obtained' => $entry['marks_obtained']]);
+        }
+
+        return back()->with('success', 'Marks saved.');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Mark::create($this->validated($request));

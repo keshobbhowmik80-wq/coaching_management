@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CoachingClass;
 use App\Models\Exam;
+use App\Models\Mark;
+use App\Models\Subject;
 use App\Support\InertiaPagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +24,51 @@ class ExamController extends Controller
             ),
             'classes' => CoachingClass::orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    public function students(Exam $exam): Response
+    {
+        $exam->load('coachingClass');
+
+        $subjects = Subject::whereHas('marks', fn($m) => $m->where('exam_id', $exam->id))
+            ->get(['id', 'name']);
+
+        $students = Mark::with('student.user')
+            ->where('exam_id', $exam->id)
+            ->get()
+            ->groupBy('student_id')
+            ->map(function ($marks) {
+                $student = $marks->first()->student;
+                $subjectStatus = $marks->mapWithKeys(fn($m) => [$m->subject_id => $m->status]);
+                return [
+                    'student_id' => $student->id,
+                    'name' => $student->user->name,
+                    'admission_no' => $student->admission_no,
+                    'subjects' => $subjectStatus,
+                ];
+            })
+            ->values();
+
+        return Inertia::render('Admin/Exams/Students', [
+            'exam' => $exam,
+            'subjects' => $subjects,
+            'students' => $students,
+        ]);
+    }
+    public function toggleStatus(Request $request, Exam $exam): RedirectResponse
+    {
+        $validated = $request->validate([
+            'student_id' => ['required', 'exists:students,id'],
+            'subject_id' => ['required', 'exists:subjects,id'],
+            'status' => ['required', 'in:present,absent'],
+        ]);
+
+        Mark::where('exam_id', $exam->id)
+            ->where('student_id', $validated['student_id'])
+            ->where('subject_id', $validated['subject_id'])
+            ->update(['status' => $validated['status']]);
+
+        return back()->with('success', 'Status updated.');
     }
 
     public function create(): Response

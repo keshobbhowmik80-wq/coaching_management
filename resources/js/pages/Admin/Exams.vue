@@ -22,8 +22,15 @@ function handleDelete(id: number) {
 </script>
 
 <template>
-
     <Head title="Exams" />
-    <ManagementList title="Exams" description="Create and manage exams." :items="exams" :columns="columns"
-        :actions="['edit', 'delete']" edit-route="/admin/exams/:id/edit" @delete="handleDelete" />
+    <ManagementList
+        title="Exams"
+        description="Create and manage exams."
+        :items="exams"
+        :columns="columns"
+        :actions="['view', 'edit', 'delete']"
+        view-route="/admin/exams/:id/students"
+        edit-route="/admin/exams/:id/edit"
+        @delete="handleDelete"
+    />
 </template>

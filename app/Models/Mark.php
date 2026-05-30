@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Mark extends Model
 {
-    protected $fillable = ['exam_id', 'subject_id', 'student_id', 'teacher_id', 'marks_obtained', 'remarks'];
+    protected $fillable = ['exam_id', 'subject_id', 'student_id', 'teacher_id', 'marks_obtained', 'status', 'remarks'];
 
     protected function casts(): array
     {

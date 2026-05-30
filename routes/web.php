@@ -67,7 +67,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         //exam
         Route::get('exams/create', [AdminExamController::class, 'create'])->name('exams.create');
         Route::get('exams/{exam}/edit', [AdminExamController::class, 'edit'])->name('exams.edit');
+        Route::get('exams/{exam}/students', [AdminExamController::class, 'students'])->name('exams.students');
+        Route::patch('exams/{exam}/students/toggle', [AdminExamController::class, 'toggleStatus'])->name('exams.students.toggle');
         Route::resource('exams', AdminExamController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        //marks
+        Route::get('marks/entry', [AdminMarkController::class, 'entry'])->name('marks.entry');
+        Route::post('marks/bulk', [AdminMarkController::class, 'bulkSave'])->name('marks.bulk');
         Route::resource('marks', AdminMarkController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('payments', AdminPaymentController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('expenses', ExpenseController::class)->only(['index', 'store', 'update', 'destroy']);
