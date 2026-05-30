@@ -118,6 +118,7 @@ class RoutineController extends Controller
             'ends_on' => ['nullable', 'date'],
             'slots' => ['required', 'array', 'min:1'],
             'slots.*.day_of_week' => ['required', 'string', 'max:20'],
+            'slots.*.date' => ['nullable', 'date'],
             'slots.*.subject_id' => ['nullable', 'exists:subjects,id'],
             'slots.*.teacher_id' => ['nullable', 'exists:teachers,id'],
             'slots.*.starts_at' => ['required', 'date_format:H:i'],

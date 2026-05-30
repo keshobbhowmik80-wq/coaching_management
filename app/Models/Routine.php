@@ -26,6 +26,11 @@ class Routine extends Model
         ];
     }
 
+    protected function serializeDate(\DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d');
+    }
+
     public function coachingClass(): BelongsTo
     {
         return $this->belongsTo(CoachingClass::class, 'class_id');

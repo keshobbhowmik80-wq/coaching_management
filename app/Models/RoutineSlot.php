@@ -10,6 +10,7 @@ class RoutineSlot extends Model
     protected $fillable = [
         'routine_id',
         'day_of_week',
+        'date',
         'subject_id',
         'teacher_id',
         'starts_at',

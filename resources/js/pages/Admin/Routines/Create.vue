@@ -16,7 +16,7 @@ const props = defineProps<{
     exams: { id: number; name: string; class_id: number; coaching_class: { id: number; name: string } }[];
 }>();
 
-const days = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const form = useForm({
     name: '',
@@ -27,7 +27,7 @@ const form = useForm({
     starts_on: '',
     ends_on: '',
     slots: [
-        { day_of_week: '', subject_id: null, teacher_id: null, starts_at: '', ends_at: '', room: '' }
+        { day_of_week: '', date: '', subject_id: null, teacher_id: null, starts_at: '', ends_at: '', room: '' }
     ],
 });
 
@@ -49,13 +49,14 @@ function onTypeChange() {
 
 function onExamSelect(examId: number) {
     const exam = props.exams.find(e => e.id === examId);
+
     if (exam) {
         form.class_id = exam.class_id;
     }
 }
 
 function addSlot() {
-    form.slots.push({ day_of_week: '', subject_id: null, teacher_id: null, starts_at: '', ends_at: '', room: '' });
+    form.slots.push({ day_of_week: '', date: '', subject_id: null, teacher_id: null, starts_at: '', ends_at: '', room: '' });
 }
 
 function removeSlot(index: number) {
@@ -70,12 +71,14 @@ function submit() {
 </script>
 
 <template>
+
     <Head title="Add Routine" />
 
     <div class="mx-auto max-w-3xl space-y-6">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <Link href="/admin/routines" class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                <Link href="/admin/routines"
+                    class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                     <ArrowLeft class="size-4" />
                     Back
                 </Link>
@@ -101,7 +104,9 @@ function submit() {
                     <div class="space-y-2">
                         <Label>Type *</Label>
                         <Select v-model="form.type" @update:model-value="onTypeChange">
-                            <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="class">Class Routine</SelectItem>
                                 <SelectItem value="exam">Exam Routine</SelectItem>
@@ -113,7 +118,9 @@ function submit() {
                         <div class="space-y-2">
                             <Label>Class *</Label>
                             <Select v-model="form.class_id">
-                                <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select class" />
+                                </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</SelectItem>
                                 </SelectContent>
@@ -122,9 +129,12 @@ function submit() {
                         <div class="space-y-2">
                             <Label>Section</Label>
                             <Select v-model="form.section_id" :disabled="!form.class_id">
-                                <SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select section" />
+                                </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem v-for="s in filteredSections" :key="s.id" :value="s.id">{{ s.name }}</SelectItem>
+                                    <SelectItem v-for="s in filteredSections" :key="s.id" :value="s.id">{{ s.name }}
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -134,9 +144,12 @@ function submit() {
                         <div class="space-y-2 sm:col-span-2">
                             <Label>Exam *</Label>
                             <Select v-model="form.exam_id" @update:model-value="(val) => onExamSelect(Number(val))">
-                                <SelectTrigger><SelectValue placeholder="Select exam" /></SelectTrigger>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select exam" />
+                                </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem v-for="e in exams" :key="e.id" :value="e.id">{{ e.name }} ({{ e.coaching_class?.name }})</SelectItem>
+                                    <SelectItem v-for="e in exams" :key="e.id" :value="e.id">{{ e.name }} ({{
+                                        e.coaching_class?.name }})</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -161,30 +174,48 @@ function submit() {
                     </Button>
                 </CardHeader>
                 <CardContent class="grid gap-4 sm:grid-cols-3">
-                    <div class="space-y-2">
-                        <Label>Day *</Label>
-                        <Select v-model="slot.day_of_week">
-                            <SelectTrigger><SelectValue placeholder="Select day" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem v-for="d in days" :key="d" :value="d">{{ d }}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    <!-- For exam: date picker + auto day -->
+                    <template v-if="form.type === 'exam'">
+                        <div class="space-y-2">
+                            <Label>Date *</Label>
+                            <Input v-model="slot.date" type="date"
+                                @change="(e) => { const val = (e.target as HTMLInputElement).value; if (val) { const [y, m, d] = val.split('-'); const dt = new Date(Number(y), Number(m) - 1, Number(d)); slot.day_of_week = days[dt.getDay()]; } }" />
+                        </div>
+                    </template>
+                    <template v-else>
+                        <div class="space-y-2">
+                            <Label>Day *</Label>
+                            <Select v-model="slot.day_of_week">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select day" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="d in days" :key="d" :value="d">{{ d }}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </template>
                     <div class="space-y-2">
                         <Label>Subject</Label>
                         <Select v-model="slot.subject_id" :disabled="!form.class_id">
-                            <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select subject" />
+                            </SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="s in filteredSubjects" :key="s.id" :value="s.id">{{ s.name }}</SelectItem>
+                                <SelectItem v-for="s in filteredSubjects" :key="s.id" :value="s.id">{{ s.name }}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <div class="space-y-2">
                         <Label>Teacher</Label>
                         <Select v-model="slot.teacher_id">
-                            <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select teacher" />
+                            </SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="t in teachers" :key="t.id" :value="t.id">{{ t.user?.name }}</SelectItem>
+                                <SelectItem v-for="t in teachers" :key="t.id" :value="t.id">{{ t.user?.name }}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

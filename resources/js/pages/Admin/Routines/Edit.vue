@@ -17,7 +17,7 @@ const props = defineProps<{
     exams: { id: number; name: string; class_id: number; coaching_class: { id: number; name: string } }[];
 }>();
 
-const days = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const form = useForm({
     name: props.routine.name,
@@ -29,14 +29,15 @@ const form = useForm({
     ends_on: props.routine.ends_on || '',
     slots: props.routine.slots?.length
         ? props.routine.slots.map((s: any) => ({
-            day_of_week: s.day_of_week,
+            day_of_week: s.day_of_week || '',
+            date: s.date || '',
             subject_id: s.subject_id,
             teacher_id: s.teacher_id,
             starts_at: s.starts_at?.substring(0, 5) || '',
             ends_at: s.ends_at?.substring(0, 5) || '',
             room: s.room || '',
         }))
-        : [{ day_of_week: '', subject_id: null, teacher_id: null, starts_at: '', ends_at: '', room: '' }],
+        : [{ day_of_week: '', date: '', subject_id: null, teacher_id: null, starts_at: '', ends_at: '', room: '' }],
 });
 
 const filteredSections = computed(() =>
@@ -62,8 +63,16 @@ function onExamSelect(examId: number) {
     }
 }
 
+function setDayFromDate(slot: any, dateValue: string) {
+    if (dateValue) {
+        const [y, m, d] = dateValue.split('-');
+        const dt = new Date(Number(y), Number(m) - 1, Number(d));
+        slot.day_of_week = days[dt.getDay()];
+    }
+}
+
 function addSlot() {
-    form.slots.push({ day_of_week: '', subject_id: null, teacher_id: null, starts_at: '', ends_at: '', room: '' });
+    form.slots.push({ day_of_week: '', date: '', subject_id: null, teacher_id: null, starts_at: '', ends_at: '', room: '' });
 }
 
 function removeSlot(index: number) {
@@ -118,6 +127,7 @@ function submit() {
                             </SelectContent>
                         </Select>
                     </div>
+
                     <template v-if="form.type === 'class'">
                         <div class="space-y-2">
                             <Label>Class *</Label>
@@ -143,6 +153,7 @@ function submit() {
                             </Select>
                         </div>
                     </template>
+
                     <template v-if="form.type === 'exam'">
                         <div class="space-y-2 sm:col-span-2">
                             <Label>Exam *</Label>
@@ -168,6 +179,7 @@ function submit() {
                 </CardContent>
             </Card>
 
+            <!-- Slots -->
             <Card v-for="(slot, index) in form.slots" :key="index">
                 <CardHeader class="flex flex-row items-center justify-between">
                     <CardTitle class="text-base">Slot {{ index + 1 }}</CardTitle>
@@ -176,22 +188,37 @@ function submit() {
                     </Button>
                 </CardHeader>
                 <CardContent class="grid gap-4 sm:grid-cols-3">
-                    <div class="space-y-2">
-                        <Label>Day *</Label>
-                        <Select v-model="slot.day_of_week">
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem v-for="d in days" :key="d" :value="d">{{ d }}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    <!-- Exam: date picker with auto day-of-week -->
+                    <template v-if="form.type === 'exam'">
+                        <div class="space-y-2">
+                            <Label>Date *</Label>
+                            <Input v-model="slot.date" type="date"
+                                @change="(e) => setDayFromDate(slot, (e.target as HTMLInputElement).value)" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label>Day</Label>
+                            <Input :model-value="slot.day_of_week" disabled class="opacity-70" />
+                        </div>
+                    </template>
+                    <template v-else>
+                        <div class="space-y-2">
+                            <Label>Day *</Label>
+                            <Select v-model="slot.day_of_week">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select day" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="d in days" :key="d" :value="d">{{ d }}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </template>
+
                     <div class="space-y-2">
                         <Label>Subject</Label>
                         <Select v-model="slot.subject_id" :disabled="!form.class_id">
                             <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder="Select subject" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem v-for="s in filteredSubjects" :key="s.id" :value="s.id">{{ s.name }}
@@ -203,7 +230,7 @@ function submit() {
                         <Label>Teacher</Label>
                         <Select v-model="slot.teacher_id">
                             <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder="Select teacher" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem v-for="t in teachers" :key="t.id" :value="t.id">{{ t.user?.name }}
@@ -221,7 +248,7 @@ function submit() {
                     </div>
                     <div class="space-y-2">
                         <Label>Room</Label>
-                        <Input v-model="slot.room" placeholder="Room" />
+                        <Input v-model="slot.room" placeholder="e.g., Room 101" />
                     </div>
                 </CardContent>
             </Card>
