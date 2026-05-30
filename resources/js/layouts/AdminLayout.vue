@@ -68,6 +68,8 @@ const groups = [
             // { title: 'Exam Students', href: '/admin/exams/{id}/students', icon: 'Users' },
             { title: 'Marks', href: '/admin/marks', icon: 'PenLine' },
             { title: 'Marks Entry', href: '/admin/marks/entry', icon: 'PenLine' },
+            { title: 'Grades', href: '/admin/grades', icon: 'Award' },
+            { title: 'Marksheet', href: '/admin/marks/marksheet', icon: 'FileText' },
             { title: 'Routines', href: '/admin/routines', icon: 'CalendarDays' },
             { title: 'Add Routine', href: '/admin/routines/create', icon: 'Plus' },
         ],

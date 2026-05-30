@@ -8,7 +8,9 @@ use App\Models\Mark;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Teacher;
+use App\Models\Grade;
 use App\Support\InertiaPagination;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -87,6 +89,169 @@ class MarkController extends Controller
         }
 
         return back()->with('success', 'Marks saved.');
+    }
+
+    public function marksheet(Request $request): Response
+    {
+        $examId = $request->input('exam_id');
+        $exams = Exam::orderByDesc('id')->get(['id', 'name', 'class_id']);
+
+        $subjects = collect();
+        $studentsData = collect();
+
+        if ($examId) {
+            $exam = Exam::with('coachingClass')->find($examId);
+
+            // Get unique subjects for this exam from marks
+            $subjects = Subject::whereIn('id', function ($query) use ($examId) {
+                $query->select('subject_id')->from('marks')->where('exam_id', $examId)->distinct();
+            })->get(['id', 'name', 'full_marks', 'pass_marks']);
+
+            // Get all students in the exam's class
+            $students = Student::with('user')
+                ->where('class_id', $exam->class_id)
+                ->orderBy('admission_no')
+                ->get();
+
+            // Get all marks for this exam
+            $marks = Mark::where('exam_id', $examId)
+                ->get()
+                ->groupBy(function ($mark) {
+                    return $mark->student_id . '-' . $mark->subject_id;
+                });
+
+            $grades = Grade::orderBy('min_percent')->get();
+
+            $studentsData = $students->map(function ($student) use ($subjects, $marks, $grades) {
+                $row = [
+                    'student_id' => $student->id,
+                    'name' => $student->user->name,
+                    'admission_no' => $student->admission_no,
+                    'subjects' => [],
+                    'total_obtained' => 0,
+                    'total_full' => 0,
+                ];
+
+                foreach ($subjects as $subject) {
+                    $key = $student->id . '-' . $subject->id;
+                    $mark = $marks->get($key);
+
+                    if ($mark && $mark->first()->status === 'absent') {
+                        $row['subjects'][$subject->id] = [
+                            'marks' => null,
+                            'full_marks' => $subject->full_marks,
+                            'status' => 'absent',
+                            'grade' => 'Absent',
+                        ];
+                    } elseif ($mark && $mark->first()->marks_obtained !== null) {
+                        $obtained = (float) $mark->first()->marks_obtained;
+                        $percent = ($obtained / $subject->full_marks) * 100;
+                        $grade = Grade::forPercent($percent);
+                        $row['subjects'][$subject->id] = [
+                            'marks' => $obtained,
+                            'full_marks' => $subject->full_marks,
+                            'status' => 'present',
+                            'grade' => $grade?->grade ?? 'N/A',
+                        ];
+                        $row['total_obtained'] += $obtained;
+                        $row['total_full'] += $subject->full_marks;
+                    } else {
+                        $row['subjects'][$subject->id] = [
+                            'marks' => null,
+                            'full_marks' => $subject->full_marks,
+                            'status' => 'pending',
+                            'grade' => '—',
+                        ];
+                    }
+                }
+
+                if ($row['total_full'] > 0) {
+                    $totalPercent = ($row['total_obtained'] / $row['total_full']) * 100;
+                    $totalGrade = Grade::forPercent($totalPercent);
+                    $row['total_grade'] = $totalGrade?->grade ?? 'N/A';
+                } else {
+                    $row['total_grade'] = '—';
+                }
+
+                return $row;
+            });
+        }
+
+        return Inertia::render('Admin/Marks/Marksheet', [
+            'exams' => $exams,
+            'subjects' => $subjects,
+            'students' => $studentsData,
+            'filters' => ['exam_id' => $examId ? (int) $examId : null],
+        ]);
+    }
+
+    public function marksheetPdf(Request $request)
+    {
+        $examId = $request->input('exam_id');
+        $exam = Exam::with('coachingClass')->findOrFail($examId);
+
+        $subjects = Subject::whereIn('id', function ($query) use ($examId) {
+            $query->select('subject_id')->from('marks')->where('exam_id', $examId)->distinct();
+        })->get(['id', 'name', 'full_marks']);
+
+        $students = Student::with('user')
+            ->where('class_id', $exam->class_id)
+            ->orderBy('admission_no')
+            ->get();
+
+        $marks = Mark::where('exam_id', $examId)->get()
+            ->groupBy(fn($m) => $m->student_id . '-' . $m->subject_id);
+
+        $grades = Grade::orderBy('min_percent')->get();
+
+        $studentsData = $students->map(function ($student) use ($subjects, $marks, $grades) {
+            $row = [
+                'name' => $student->user->name,
+                'admission_no' => $student->admission_no,
+                'subjects' => [],
+                'total_obtained' => 0,
+                'total_full' => 0,
+                'total_grade' => '—',
+            ];
+
+            foreach ($subjects as $subject) {
+                $key = $student->id . '-' . $subject->id;
+                $mark = $marks->get($key);
+
+                if ($mark && $mark->first()->status === 'absent') {
+                    $row['subjects'][$subject->id] = ['display' => 'Absent', 'grade' => ''];
+                } elseif ($mark && $mark->first()->marks_obtained !== null) {
+                    $obtained = (float) $mark->first()->marks_obtained;
+                    $percent = ($obtained / $subject->full_marks) * 100;
+                    $grade = Grade::forPercent($percent);
+                    $row['subjects'][$subject->id] = [
+                        'display' => $obtained,
+                        'grade' => $grade?->grade ?? '',
+                    ];
+                    $row['total_obtained'] += $obtained;
+                    $row['total_full'] += $subject->full_marks;
+                } else {
+                    $row['subjects'][$subject->id] = ['display' => '—', 'grade' => ''];
+                }
+            }
+
+            if ($row['total_full'] > 0) {
+                $totalPercent = ($row['total_obtained'] / $row['total_full']) * 100;
+                $totalGrade = Grade::forPercent($totalPercent);
+                $row['total_grade'] = $totalGrade?->grade ?? '';
+            }
+
+            return $row;
+        });
+
+        $pdf = Pdf::loadView('pdf.marksheet-bulk', [
+            'exam' => $exam,
+            'subjects' => $subjects,
+            'students' => $studentsData,
+            'coachingName' => config('app.name'),
+        ]);
+
+        return $pdf->download("marksheet-{$exam->name}.pdf");
     }
 
     public function store(Request $request): RedirectResponse

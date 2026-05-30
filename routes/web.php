@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CoachingClassController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
 use App\Http\Controllers\Admin\ExpenseController;
+use App\Http\Controllers\Admin\GradeController;
 use App\Http\Controllers\Admin\MarkController as AdminMarkController;
 use App\Http\Controllers\Admin\NoticeController as AdminNoticeController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
@@ -74,10 +75,18 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         //marks
         Route::get('marks/entry', [AdminMarkController::class, 'entry'])->name('marks.entry');
         Route::post('marks/bulk', [AdminMarkController::class, 'bulkSave'])->name('marks.bulk');
+        Route::get('marks/marksheet', [AdminMarkController::class, 'marksheet'])->name('marks.marksheet');
+        Route::get('marks/marksheet/pdf', [AdminMarkController::class, 'marksheetPdf'])->name('marks.marksheet.pdf');
         Route::resource('marks', AdminMarkController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('payments', AdminPaymentController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('expenses', ExpenseController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('notices', AdminNoticeController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        //grades
+        Route::get('grades', [GradeController::class, 'index'])->name('grades.index');
+        Route::post('grades', [GradeController::class, 'store'])->name('grades.store');
+        Route::put('grades/{grade}', [GradeController::class, 'update'])->name('grades.update');
+        Route::delete('grades/{grade}', [GradeController::class, 'destroy'])->name('grades.destroy');
         //routines
         Route::get('routines/create', [AdminRoutineController::class, 'create'])->name('routines.create');
         Route::get('routines/{routine}', [AdminRoutineController::class, 'show'])->name('routines.show');
